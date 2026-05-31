@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#0f172a" />
   <title>日ノ本異聞録 管理盤</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style-v047.css?v=047" />
+  <link rel="stylesheet" href="./style-v048.css?v=048" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">外部運用PWA v0.47</p>
+      <p class="eyebrow">外部運用PWA v0.48</p>
       <h1>日ノ本異聞録 管理盤</h1>
     </div>
     <button id="installButton" class="small ghost hidden">インストール</button>
@@ -49,9 +49,10 @@
           <h2>最新AI本文</h2>
           <span id="latestResponseBadge" class="mini-pill">未受信</span>
         </div>
-        <p class="hint">ChatGPTで作られた本文をここに表示します。本文を広く表示します。本文の下で採用／採用しないを選べます。採用しない場合は本文を正史にせず、行動入力へ戻ります。未採用の返答は、採用するまで正史ではありません。</p>
+        <p class="hint">ChatGPTで作られた本文をここに表示します。本文を広く表示します。本文の下で採用／採用しないを選べます。採用すると行動候補が下の入力欄へ反映されます。未採用の返答は、採用するまで正史ではありません。</p>
         <div id="parsedResponseInfo" class="parsed-info">本文案と行動候補を自動分解します。</div>
         <div id="latestResponseText" class="latest-response-box">まだAI返答はありません。</div>
+        <div id="latestCandidatePreview" class="candidate-preview hidden"></div>
         <div class="toolbar grid-2">
           <button id="quickAdoptButton" class="success" disabled>この本文を採用</button>
           <button id="rejectLatestButton" class="danger" disabled>採用しない</button>
@@ -63,7 +64,8 @@
           <h2>行動を書く</h2>
           <span id="saveStatus" class="mini-pill">未保存</span>
         </div>
-        <textarea id="actionInput" class="textarea action-textarea" placeholder="例：③ 周辺を観察：人通りや街の違和感を見る"></textarea>
+        <div id="quickCandidateButtons" class="candidate-buttons"></div>
+      <textarea id="actionInput" class="textarea action-textarea" placeholder="例：③ 周辺を観察：人通りや街の違和感を見る"></textarea>
         <div class="toolbar grid-2">
           <button id="sendActionButton" class="big primary">送信してAIへ</button>
           <button id="copyPromptAfterSendButton" class="big secondary">プロンプトコピー</button>
@@ -174,6 +176,6 @@
       </section>
     </section>
   </main>
-  <script src="./app-v047.js?v=047"></script>
+  <script src="./app-v048.js?v=048"></script>
 </body>
 </html>
