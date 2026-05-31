@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#0f172a" />
   <title>日ノ本異聞録 管理盤</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style-v031.css?v=031" />
+  <link rel="stylesheet" href="./style-v032.css?v=032" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">外部運用PWA v0.31</p>
+      <p class="eyebrow">外部運用PWA v0.32</p>
       <h1>日ノ本異聞録 管理盤</h1>
     </div>
     <button id="installButton" class="small ghost hidden">インストール</button>
@@ -55,11 +55,12 @@
         <div class="toolbar grid-2">
           <button id="openReaderButton" class="secondary">大きく読む</button>
           <button id="quickAdoptButton" class="success" disabled>この本文を採用</button>
+          <button id="goNextActionButton" class="secondary">次の行動へ</button>
           <button id="jumpToResponseButton" class="secondary">返答欄へ</button>
         </div>
       </section>
 
-      <section class="card primary-card">
+      <section id="actionCard" class="card primary-card">
         <div class="card-title-row">
           <h2>行動を書く</h2>
           <span id="saveStatus" class="mini-pill">未保存</span>
@@ -191,6 +192,6 @@
     </div>
   </div>
 
-  <script src="./app-v031.js?v=031"></script>
+  <script src="./app-v032.js?v=032"></script>
 </body>
 </html>
