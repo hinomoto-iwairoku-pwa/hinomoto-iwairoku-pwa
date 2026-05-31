@@ -1,7 +1,10 @@
-const STORAGE_KEY = "hinomoto_pwa_state_v26";
-const STORAGE_KEY_V25 = "hinomoto_pwa_state_v25";
-const STORAGE_KEY_V2 = "hinomoto_pwa_state_v2";
-const STORAGE_KEY_V1 = "hinomoto_pwa_state_v1";
+const STORAGE_KEY = "hinomoto_pwa_state_v27";
+const STORAGE_KEYS_OLD = [
+  "hinomoto_pwa_state_v26",
+  "hinomoto_pwa_state_v25",
+  "hinomoto_pwa_state_v2",
+  "hinomoto_pwa_state_v1"
+];
 const BRIDGE_OUTBOX_KEY = "hinomoto_bridge_outbox";
 const BRIDGE_INBOX_KEY = "hinomoto_bridge_inbox";
 
@@ -20,28 +23,14 @@ async function loadInitialState() {
     return;
   }
 
-  const v25Saved = localStorage.getItem(STORAGE_KEY_V25);
-  if (v25Saved) {
-    appState = JSON.parse(v25Saved);
-    normalizeState();
-    saveState("v0.25から引継ぎ");
-    return;
-  }
-
-  const v2Saved = localStorage.getItem(STORAGE_KEY_V2);
-  if (v2Saved) {
-    appState = JSON.parse(v2Saved);
-    normalizeState();
-    saveState("v0.2から引継ぎ");
-    return;
-  }
-
-  const v1Saved = localStorage.getItem(STORAGE_KEY_V1);
-  if (v1Saved) {
-    appState = JSON.parse(v1Saved);
-    normalizeState();
-    saveState("v0.1から引継ぎ");
-    return;
+  for (const key of STORAGE_KEYS_OLD) {
+    const old = localStorage.getItem(key);
+    if (old) {
+      appState = JSON.parse(old);
+      normalizeState();
+      saveState(`${key.replace("hinomoto_pwa_state_", "v")}から引継ぎ`);
+      return;
+    }
   }
 
   const response = await fetch("./initial-state.json");
@@ -52,18 +41,26 @@ async function loadInitialState() {
 
 function normalizeState() {
   appState.meta = appState.meta || {};
-  appState.meta.appVersion = "0.26.0-adopt-dedupe";
+  appState.meta.appVersion = "0.27.0-mobile-ui";
   appState.world = appState.world || {};
   appState.protagonist = appState.protagonist || {};
   appState.artifacts = appState.artifacts || {};
+  appState.artifacts.fujiwari = appState.artifacts.fujiwari || { location: "不明", carriedByHiroki: false };
+  appState.artifacts.fujinuki = appState.artifacts.fujinuki || { location: "不明", carriedByHiroki: false };
   appState.communications = appState.communications || {};
-  appState.combat = appState.combat || {};
+  appState.communications.masamune = appState.communications.masamune || { thread: "個チャ", state: "不明" };
+  appState.communications.terumoto = appState.communications.terumoto || { thread: "個チャ", state: "不明" };
+  appState.communications.operationRoom = appState.communications.operationRoom || { newCheck: false, normalMissionAccepted: false, sortie: false };
+  appState.combat = appState.combat || { enemyState: "NO-CONTACT", combatUiAllowed: false };
   appState.story = appState.story || {};
   appState.ai = appState.ai || {};
+
+  appState.story.currentText = appState.story.currentText || "";
+  appState.story.actionCandidates = appState.story.actionCandidates || [];
   appState.story.canonLog = appState.story.canonLog || [];
   appState.story.rejectedLog = appState.story.rejectedLog || [];
   appState.story.actionHistory = appState.story.actionHistory || [];
-  appState.story.actionCandidates = appState.story.actionCandidates || [];
+
   appState.ai.sendQueue = appState.ai.sendQueue || [];
   appState.ai.pendingAction = appState.ai.pendingAction || "";
   appState.ai.responseAutoCheck = true;
@@ -93,32 +90,77 @@ function saveState(label = "保存しました") {
   render();
 }
 
+function escapeHtml(str) {
+  return String(str ?? "").replace(/[&<>"']/g, (s) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[s]);
+}
+
+function setTab(tabName) {
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  });
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    panel.classList.toggle("active", panel.id === `tab-${tabName}`);
+  });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderHero() {
+  $("heroLocation").textContent = appState.world.currentLocation || "不明";
+  $("heroMode").textContent = appState.protagonist.mode || "状態不明";
+
+  const chips = [
+    { text: `${appState.world.date || ""} ${appState.world.timeOfDay || ""}`, cls: "safe" },
+    { text: `富士割：${appState.artifacts.fujiwari.carriedByHiroki ? "携行" : "祭壇"}`, cls: appState.artifacts.fujiwari.carriedByHiroki ? "warn" : "safe" },
+    { text: `敵：${appState.combat.enemyState || "不明"}`, cls: appState.combat.enemyState === "NO-CONTACT" ? "safe" : "warn" },
+    { text: `拡張：${appState.ai.extensionStatus || "未接続"}`, cls: appState.ai.extensionStatus === "返答受信" || appState.ai.extensionStatus === "接続済み" ? "safe" : "" }
+  ];
+  $("quickChips").innerHTML = chips.map(c => `<span class="chip ${c.cls}">${escapeHtml(c.text)}</span>`).join("");
+
+  const response = Boolean((appState.ai.lastResponse || "").trim());
+  const checked = Boolean(appState.ai.lastCheck);
+  const adopted = Boolean(appState.ai.lastAdoptedRequestId || appState.ai.lastAdoptedTextHash);
+
+  setStep("stepSend", true, true);
+  setStep("stepResponse", response, response);
+  setStep("stepCheck", checked, checked);
+  setStep("stepAdopt", adopted, adopted);
+}
+
+function setStep(id, active, done) {
+  const el = $(id);
+  el.classList.toggle("active", Boolean(active && !done));
+  el.classList.toggle("done", Boolean(done));
+}
+
 function renderStatus() {
   const items = [
-    ["日時", `${appState.world.date}（${appState.world.weekday}）${appState.world.timeOfDay}`],
+    ["日時", `${appState.world.date}（${appState.world.weekday || ""}）${appState.world.timeOfDay || ""}`],
     ["現在地", appState.world.currentLocation],
-    ["広輝", `${appState.protagonist.mode} / 所持：${(appState.protagonist.currentHeldItems || []).join("、")}`],
-    ["富士割", `${appState.artifacts.fujiwari?.location || "不明"} / 携行：${appState.artifacts.fujiwari?.carriedByHiroki ? "あり" : "なし"}`],
-    ["富士抜き", `${appState.artifacts.fujinuki?.location || "不明"} / 携行：${appState.artifacts.fujinuki?.carriedByHiroki ? "あり" : "なし"}`],
+    ["広輝", `${appState.protagonist.mode || ""} / 所持：${(appState.protagonist.currentHeldItems || []).join("、")}`],
+    ["富士割", `${appState.artifacts.fujiwari.location} / 携行：${appState.artifacts.fujiwari.carriedByHiroki ? "あり" : "なし"}`],
+    ["富士抜き", `${appState.artifacts.fujinuki.location} / 携行：${appState.artifacts.fujinuki.carriedByHiroki ? "あり" : "なし"}`],
     ["戦闘状態", `${appState.combat.enemyState} / 戦闘UI：${appState.combat.combatUiAllowed ? "可" : "不可"}`],
-    ["政宗", `${appState.communications.masamune?.thread || "個チャ"}：${appState.communications.masamune?.state || "不明"}`],
-    ["輝統", `${appState.communications.terumoto?.thread || "個チャ"}：${appState.communications.terumoto?.state || "不明"}`],
-    ["作戦室", `新規確認：${appState.communications.operationRoom?.newCheck ? "あり" : "なし"} / 受諾：${appState.communications.operationRoom?.normalMissionAccepted ? "あり" : "なし"}`],
+    ["政宗", `${appState.communications.masamune.thread || "個チャ"}：${appState.communications.masamune.state || "不明"}`],
+    ["輝統", `${appState.communications.terumoto.thread || "個チャ"}：${appState.communications.terumoto.state || "不明"}`],
+    ["作戦室", `新規確認：${appState.communications.operationRoom.newCheck ? "あり" : "なし"} / 受諾：${appState.communications.operationRoom.normalMissionAccepted ? "あり" : "なし"}`],
   ];
   $("statusGrid").innerHTML = items.map(([k, v]) => `<div class="status-item"><b>${escapeHtml(k)}</b><span>${escapeHtml(v)}</span></div>`).join("");
 }
 
 function renderExtensionStatus() {
-  const status = appState.ai.extensionStatus || "未接続";
-  $("extensionStatus").textContent = status;
+  $("extensionStatus").textContent = appState.ai.extensionStatus || "未接続";
   $("requestIdLabel").textContent = appState.ai.lastRequestId || "なし";
   $("extensionEventLabel").textContent = appState.ai.lastExtensionEvent || "なし";
 
   let outbox = appState.ai.outbox;
   if (!outbox) {
-    try {
-      outbox = JSON.parse(localStorage.getItem(BRIDGE_OUTBOX_KEY) || "null");
-    } catch {}
+    try { outbox = JSON.parse(localStorage.getItem(BRIDGE_OUTBOX_KEY) || "null"); } catch {}
   }
   $("outboxLabel").textContent = outbox ? `${outbox.status || "待機"} / ${outbox.requestId || "IDなし"}` : "なし";
 }
@@ -131,23 +173,15 @@ function renderStory() {
 function renderActionHistory() {
   const list = appState.story.actionHistory || [];
   $("actionHistory").innerHTML = list.length
-    ? list.slice(-5).reverse().map((item) => `
-      <div class="mini-log-item">
-        <small>${escapeHtml(item.sentAt)} / ${escapeHtml(item.status || "送信済み")}</small>
-        ${escapeHtml(item.text)}
-      </div>
-    `).join("")
+    ? list.slice(-6).reverse().map((item) => `<div class="mini-log-item"><small>${escapeHtml(item.sentAt)} / ${escapeHtml(item.status || "送信済み")}</small>${escapeHtml(item.text)}</div>`).join("")
     : `<div class="mini-log-item">まだ送信履歴はありません。</div>`;
 }
 
 function renderLogs() {
   const logs = appState.story.canonLog || [];
+  $("logCount").textContent = `${logs.length}件`;
   $("canonLog").innerHTML = logs.length
-    ? logs.slice().reverse().map((log) => `
-      <div class="log-item">
-        <small>${escapeHtml(log.adoptedAt)}</small>
-        ${escapeHtml(log.text)}
-      </div>`).join("")
+    ? logs.slice().reverse().map((log) => `<div class="log-item"><small>${escapeHtml(log.adoptedAt)} / 行動：${escapeHtml(log.playerAction || "未記録")}</small>${escapeHtml(log.text)}</div>`).join("")
     : `<div class="log-item">まだ正史ログはありません。</div>`;
 }
 
@@ -157,25 +191,17 @@ function renderStateEditor() {
 
 function render() {
   if (!appState) return;
+  renderHero();
   renderStatus();
   renderExtensionStatus();
   renderStory();
   renderActionHistory();
   renderLogs();
   renderStateEditor();
+
   $("promptBox").value = appState.ai.lastPrompt || "";
   $("responseBox").value = appState.ai.lastResponse || "";
   $("actionInput").value = appState.ai.pendingAction || "";
-}
-
-function escapeHtml(str) {
-  return String(str ?? "").replace(/[&<>"']/g, (s) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;",
-  })[s]);
 }
 
 function buildPrompt(actionText = "") {
@@ -188,7 +214,7 @@ function buildPrompt(actionText = "") {
 この返答はPWA側で検査され、ユーザーが採用するまで正史ではありません。
 
 【現在状態】
-日付：${s.world.date}（${s.world.weekday}）${s.world.timeOfDay}
+日付：${s.world.date}（${s.world.weekday || ""}）${s.world.timeOfDay}
 現在地：${s.world.currentLocation}
 旧境界：${s.world.previousBoundary}
 広輝状態：${s.protagonist.mode}
@@ -234,18 +260,18 @@ function sendAction() {
 
   const prompt = buildPrompt(actionText);
   const requestId = makeRequestId();
-  const entry = {
-    sentAt: nowLabel(),
-    text: actionText,
-    status: "AIプロンプト生成済み",
-    requestId
-  };
+  const entry = { sentAt: nowLabel(), text: actionText, status: "AIプロンプト生成済み", requestId };
 
   appState.ai.pendingAction = actionText;
   appState.ai.lastPrompt = prompt;
   appState.ai.lastRequestId = requestId;
   appState.ai.lastExtensionEvent = "PWA_SEND_READY";
   appState.ai.extensionStatus = "送信待ち";
+  appState.ai.lastResponse = "";
+  appState.ai.lastCheck = null;
+  appState.ai.lastAdoptedRequestId = "";
+  appState.ai.lastAdoptedTextHash = "";
+
   appState.ai.sendQueue.push(entry);
   appState.story.actionHistory.push(entry);
 
@@ -264,10 +290,15 @@ function sendAction() {
   window.postMessage(outbox, location.origin);
 
   $("promptBox").value = prompt;
-  saveState("送信準備OK");
+  $("responseBox").value = "";
+  $("checkResults").innerHTML = "";
+  $("adoptButton").disabled = true;
+  $("rejectButton").disabled = true;
 
+  saveState("送信準備OK");
   copyText(prompt, false);
-  $("saveStatus").textContent = "送信プロンプト生成・コピー済み";
+  $("saveStatus").textContent = "送信プロンプト生成";
+  setTab("ai");
 }
 
 function receiveExtensionResponse(payload) {
@@ -289,6 +320,7 @@ function receiveExtensionResponse(payload) {
   appState.ai.lastCheck = result;
   displayChecks(result);
   saveState(result.ok ? "拡張返答・検査OK" : "拡張返答・検査注意");
+  setTab("play");
 }
 
 function pollBridgeInbox() {
@@ -319,6 +351,13 @@ function startBridgeListeners() {
 
     if (data.type === "AI_RESPONSE") {
       receiveExtensionResponse(data);
+      return;
+    }
+
+    if (data.type === "BRIDGE_ERROR") {
+      appState.ai.extensionStatus = "エラー";
+      appState.ai.lastExtensionEvent = data.error || "BRIDGE_ERROR";
+      saveState("拡張エラー");
     }
   });
 
@@ -347,12 +386,9 @@ function runChecks(text) {
   const dangers = [];
   const checkText = extractMainTextForChecks(text);
 
-  const fujiwariAbsent = !appState.artifacts.fujiwari.carriedByHiroki;
-  if (fujiwariAbsent) {
+  if (!appState.artifacts.fujiwari.carriedByHiroki) {
     const fujiwariPattern = /(富士割|宝刀)[\s\S]{0,24}(柄に触|抜刀|抜く|抜いた|構え|構える|握|握る|振る|納刀|斬|切|突)/;
-    if (fujiwariPattern.test(checkText)) {
-      dangers.push("富士割が現在地にないのに、手元・抜刀・構え・攻撃に見える描写があります。");
-    }
+    if (fujiwariPattern.test(checkText)) dangers.push("富士割が現在地にないのに、手元・抜刀・構え・攻撃に見える描写があります。");
   }
 
   if (appState.combat.enemyState !== "ENEMY-CONFIRMED") {
@@ -392,9 +428,7 @@ function runChecks(text) {
     warnings.push("通知・DM・作戦室通知らしき内容がありますが、chat_message writing block形式が見当たりません。");
   }
 
-  if (checkText.includes("---")) {
-    warnings.push("薄い区切り線「---」が含まれています。日ノ本本編形式では避ける対象です。");
-  }
+  if (checkText.includes("---")) warnings.push("薄い区切り線「---」が含まれています。日ノ本本編形式では避ける対象です。");
 
   return { warnings, dangers, ok: warnings.length === 0 && dangers.length === 0 };
 }
@@ -402,9 +436,7 @@ function runChecks(text) {
 function displayChecks(result) {
   const box = $("checkResults");
   const parts = [];
-  if (result.ok) {
-    parts.push(`<div class="check-item ok"><b>検査OK</b><br>重大警告はありません。採用前に本文内容だけ目視確認してください。</div>`);
-  }
+  if (result.ok) parts.push(`<div class="check-item ok"><b>検査OK</b><br>重大警告はありません。採用前に本文内容だけ目視確認してください。</div>`);
   result.dangers.forEach((x) => parts.push(`<div class="check-item danger"><b>重大警告</b><br>${escapeHtml(x)}</div>`));
   result.warnings.forEach((x) => parts.push(`<div class="check-item warning"><b>注意</b><br>${escapeHtml(x)}</div>`));
   box.innerHTML = parts.join("");
@@ -423,16 +455,14 @@ function autoCheckResponseSoon() {
     displayChecks(result);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(appState, null, 2));
     $("saveStatus").textContent = result.ok ? "自動検査OK" : "自動検査注意";
+    renderHero();
   }, 500);
 }
-
 
 function simpleHash(text) {
   let hash = 0;
   const s = String(text || "");
-  for (let i = 0; i < s.length; i++) {
-    hash = ((hash << 5) - hash + s.charCodeAt(i)) | 0;
-  }
+  for (let i = 0; i < s.length; i++) hash = ((hash << 5) - hash + s.charCodeAt(i)) | 0;
   return String(hash);
 }
 
@@ -463,12 +493,8 @@ function dedupeCanonLog(silent = false) {
 
   appState.story.canonLog = deduped;
   saveState(removed ? `重複${removed}件整理` : "重複なし");
-
-  if (!silent) {
-    alert(removed ? `重複ログを${removed}件整理しました。` : "重複ログは見つかりませんでした。");
-  }
+  if (!silent) alert(removed ? `重複ログを${removed}件整理しました。` : "重複ログは見つかりませんでした。");
 }
-
 
 function adoptResponse() {
   const button = $("adoptButton");
@@ -478,7 +504,7 @@ function adoptResponse() {
   button.disabled = true;
   button.classList.add("processing");
   const oldLabel = button.textContent;
-  button.textContent = "採用処理中...";
+  button.textContent = "採用中...";
 
   try {
     const check = runChecks(text);
@@ -495,14 +521,7 @@ function adoptResponse() {
       return;
     }
 
-    const entry = {
-      adoptedAt: nowLabel(),
-      playerAction: appState.ai.pendingAction || "",
-      requestId,
-      text,
-      check
-    };
-
+    const entry = { adoptedAt: nowLabel(), playerAction: appState.ai.pendingAction || "", requestId, text, check };
     appState.story.canonLog.push(entry);
     appState.story.currentText = text;
     appState.ai.lastResponse = text;
@@ -511,12 +530,7 @@ function adoptResponse() {
     appState.ai.lastAdoptedTextHash = simpleHash(text);
 
     if (appState.ai.pendingAction) {
-      appState.story.actionHistory.push({
-        sentAt: nowLabel(),
-        text: appState.ai.pendingAction,
-        status: "返答採用済み",
-        requestId
-      });
+      appState.story.actionHistory.push({ sentAt: nowLabel(), text: appState.ai.pendingAction, status: "返答採用済み", requestId });
     }
 
     if (appState.ai.outbox) {
@@ -526,6 +540,7 @@ function adoptResponse() {
 
     saveState("採用済み");
     displayChecks({ warnings: [], dangers: [], ok: true });
+    setTab("log");
   } finally {
     setTimeout(() => {
       button.classList.remove("processing");
@@ -538,13 +553,7 @@ function adoptResponse() {
 function rejectResponse() {
   const text = $("responseBox").value.trim();
   if (!text) return;
-  appState.story.rejectedLog.push({
-    rejectedAt: nowLabel(),
-    playerAction: appState.ai.pendingAction || "",
-    requestId: appState.ai.lastRequestId || "",
-    text,
-    check: runChecks(text)
-  });
+  appState.story.rejectedLog.push({ rejectedAt: nowLabel(), playerAction: appState.ai.pendingAction || "", requestId: appState.ai.lastRequestId || "", text, check: runChecks(text) });
   appState.ai.lastResponse = text;
   if (appState.ai.outbox) {
     appState.ai.outbox.status = "rejected";
@@ -576,10 +585,7 @@ function copyText(text, showStatus = true) {
 
 function copyOutbox() {
   const raw = localStorage.getItem(BRIDGE_OUTBOX_KEY);
-  if (!raw) {
-    alert("outboxは空です。先に行動を送信してください。");
-    return;
-  }
+  if (!raw) return alert("outboxは空です。先に行動を送信してください。");
   copyText(raw);
 }
 
@@ -614,17 +620,13 @@ function simulateExtensionResponse() {
 - ③ 周辺をさらに観察：人通りと街路樹の違和感を見る
 - ④ 自由行動：自分の言葉で指定する`;
 
-  const payload = {
-    source: "HINOMOTO_EXTENSION",
-    type: "AI_RESPONSE",
-    requestId: appState.ai.lastRequestId || makeRequestId(),
-    receivedAt: new Date().toISOString(),
-    responseText
-  };
+  const payload = { source: "HINOMOTO_EXTENSION", type: "AI_RESPONSE", requestId: appState.ai.lastRequestId || makeRequestId(), receivedAt: new Date().toISOString(), responseText };
   window.postMessage(payload, location.origin);
 }
 
 function setupEvents() {
+  document.querySelectorAll(".nav-btn").forEach((btn) => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
+
   $("saveNowButton").addEventListener("click", () => saveState("保存しました"));
   $("exportButton").addEventListener("click", exportState);
 
@@ -640,9 +642,7 @@ function setupEvents() {
   $("resetButton").addEventListener("click", async () => {
     if (!confirm("初期状態へ戻します。現在のローカル保存は上書きされます。")) return;
     localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(STORAGE_KEY_V25);
-    localStorage.removeItem(STORAGE_KEY_V2);
-    localStorage.removeItem(STORAGE_KEY_V1);
+    STORAGE_KEYS_OLD.forEach(k => localStorage.removeItem(k));
     localStorage.removeItem(BRIDGE_OUTBOX_KEY);
     localStorage.removeItem(BRIDGE_INBOX_KEY);
     const response = await fetch("./initial-state.json", { cache: "no-store" });
@@ -729,11 +729,8 @@ function setupEvents() {
 
 async function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
-    try {
-      await navigator.serviceWorker.register("./service-worker.js?v=026");
-    } catch (err) {
-      console.warn("Service Worker registration failed", err);
-    }
+    try { await navigator.serviceWorker.register("./service-worker.js?v=027"); }
+    catch (err) { console.warn("Service Worker registration failed", err); }
   }
 }
 
