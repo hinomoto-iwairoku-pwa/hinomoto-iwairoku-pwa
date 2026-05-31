@@ -1,6 +1,7 @@
-const STORAGE_KEY = "hinomoto_pwa_state_v1";
+const STORAGE_KEY = "hinomoto_pwa_state_v2";
 let appState = null;
 let deferredInstallPrompt = null;
+let responseCheckTimer = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -8,11 +9,42 @@ async function loadInitialState() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     appState = JSON.parse(saved);
+    normalizeState();
     return;
   }
+
+  // v0.1からの引き継ぎがあれば読む
+  const oldSaved = localStorage.getItem("hinomoto_pwa_state_v1");
+  if (oldSaved) {
+    appState = JSON.parse(oldSaved);
+    normalizeState();
+    saveState("v0.1から引継ぎ");
+    return;
+  }
+
   const response = await fetch("./initial-state.json");
   appState = await response.json();
+  normalizeState();
   saveState("初期状態を保存");
+}
+
+function normalizeState() {
+  appState.meta = appState.meta || {};
+  appState.meta.appVersion = "0.2.0-action-send";
+  appState.world = appState.world || {};
+  appState.protagonist = appState.protagonist || {};
+  appState.artifacts = appState.artifacts || {};
+  appState.communications = appState.communications || {};
+  appState.combat = appState.combat || {};
+  appState.story = appState.story || {};
+  appState.ai = appState.ai || {};
+  appState.story.canonLog = appState.story.canonLog || [];
+  appState.story.rejectedLog = appState.story.rejectedLog || [];
+  appState.story.actionHistory = appState.story.actionHistory || [];
+  appState.story.actionCandidates = appState.story.actionCandidates || [];
+  appState.ai.sendQueue = appState.ai.sendQueue || [];
+  appState.ai.pendingAction = appState.ai.pendingAction || "";
+  appState.ai.responseAutoCheck = true;
 }
 
 function nowLabel() {
@@ -20,6 +52,7 @@ function nowLabel() {
 }
 
 function saveState(label = "保存しました") {
+  normalizeState();
   appState.meta.updatedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(appState, null, 2));
   $("saveStatus").textContent = label;
@@ -30,13 +63,13 @@ function renderStatus() {
   const items = [
     ["日時", `${appState.world.date}（${appState.world.weekday}）${appState.world.timeOfDay}`],
     ["現在地", appState.world.currentLocation],
-    ["広輝", `${appState.protagonist.mode} / 所持：${appState.protagonist.currentHeldItems.join("、")}`],
-    ["富士割", `${appState.artifacts.fujiwari.location} / 携行：${appState.artifacts.fujiwari.carriedByHiroki ? "あり" : "なし"}`],
-    ["富士抜き", `${appState.artifacts.fujinuki.location} / 携行：${appState.artifacts.fujinuki.carriedByHiroki ? "あり" : "なし"}`],
+    ["広輝", `${appState.protagonist.mode} / 所持：${(appState.protagonist.currentHeldItems || []).join("、")}`],
+    ["富士割", `${appState.artifacts.fujiwari?.location || "不明"} / 携行：${appState.artifacts.fujiwari?.carriedByHiroki ? "あり" : "なし"}`],
+    ["富士抜き", `${appState.artifacts.fujinuki?.location || "不明"} / 携行：${appState.artifacts.fujinuki?.carriedByHiroki ? "あり" : "なし"}`],
     ["戦闘状態", `${appState.combat.enemyState} / 戦闘UI：${appState.combat.combatUiAllowed ? "可" : "不可"}`],
-    ["政宗", `${appState.communications.masamune.thread}：${appState.communications.masamune.state}`],
-    ["輝統", `${appState.communications.terumoto.thread}：${appState.communications.terumoto.state}`],
-    ["作戦室", `新規確認：${appState.communications.operationRoom.newCheck ? "あり" : "なし"} / 受諾：${appState.communications.operationRoom.normalMissionAccepted ? "あり" : "なし"}`],
+    ["政宗", `${appState.communications.masamune?.thread || "個チャ"}：${appState.communications.masamune?.state || "不明"}`],
+    ["輝統", `${appState.communications.terumoto?.thread || "個チャ"}：${appState.communications.terumoto?.state || "不明"}`],
+    ["作戦室", `新規確認：${appState.communications.operationRoom?.newCheck ? "あり" : "なし"} / 受諾：${appState.communications.operationRoom?.normalMissionAccepted ? "あり" : "なし"}`],
   ];
   $("statusGrid").innerHTML = items.map(([k, v]) => `<div class="status-item"><b>${escapeHtml(k)}</b><span>${escapeHtml(v)}</span></div>`).join("");
 }
@@ -44,6 +77,18 @@ function renderStatus() {
 function renderStory() {
   $("storyText").textContent = appState.story.currentText || "";
   $("candidateList").innerHTML = (appState.story.actionCandidates || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("");
+}
+
+function renderActionHistory() {
+  const list = appState.story.actionHistory || [];
+  $("actionHistory").innerHTML = list.length
+    ? list.slice(-5).reverse().map((item) => `
+      <div class="mini-log-item">
+        <small>${escapeHtml(item.sentAt)} / ${escapeHtml(item.status || "送信済み")}</small>
+        ${escapeHtml(item.text)}
+      </div>
+    `).join("")
+    : `<div class="mini-log-item">まだ送信履歴はありません。</div>`;
 }
 
 function renderLogs() {
@@ -65,14 +110,16 @@ function render() {
   if (!appState) return;
   renderStatus();
   renderStory();
+  renderActionHistory();
   renderLogs();
   renderStateEditor();
   $("promptBox").value = appState.ai.lastPrompt || "";
   $("responseBox").value = appState.ai.lastResponse || "";
+  $("actionInput").value = appState.ai.pendingAction || "";
 }
 
 function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (s) => ({
+  return String(str ?? "").replace(/[&<>"']/g, (s) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -81,8 +128,11 @@ function escapeHtml(str) {
   })[s]);
 }
 
-function buildPrompt() {
+function buildPrompt(actionText = "") {
   const s = appState;
+  const actionSection = actionText.trim()
+    ? `\n【今回のプレイヤー行動】\n${actionText.trim()}\n`
+    : "";
   return `あなたは「日ノ本異聞録：歴史の継承者」の文章案作成AIです。
 ただし、正史確定・状態保存・Drive反映済み扱いは禁止です。
 この返答はPWA側で検査され、ユーザーが採用するまで正史ではありません。
@@ -92,7 +142,7 @@ function buildPrompt() {
 現在地：${s.world.currentLocation}
 旧境界：${s.world.previousBoundary}
 広輝状態：${s.protagonist.mode}
-広輝の現在所持品：${s.protagonist.currentHeldItems.join("、")}
+広輝の現在所持品：${(s.protagonist.currentHeldItems || []).join("、")}
 富士割：${s.artifacts.fujiwari.location}（携行：${s.artifacts.fujiwari.carriedByHiroki ? "あり" : "なし"}）
 富士抜き：${s.artifacts.fujinuki.location}（通常携行なし）
 政宗：${s.communications.masamune.state}
@@ -111,7 +161,7 @@ function buildPrompt() {
 - 死亡、重傷、婚姻、子供、神様契約、神器継承、富士抜き正式使用、武具喪失、家承認、関係不可逆確定、大移動、武家秩序変更は不可逆ゲートで止める。
 - 行動候補は「**行動候補**」の下に「- ① 行動：短い補足」形式。候補同士の空行は禁止。自由行動は最後。
 - ユーザーが明示するまで移動・返信・受諾・出動・支払い・戦闘開始を確定しない。
-
+${actionSection}
 【現在本文】
 ${s.story.currentText}
 
@@ -125,42 +175,86 @@ ${(s.story.actionCandidates || []).map(x => "- " + x).join("\n")}
 `;
 }
 
+function sendAction() {
+  const actionText = $("actionInput").value.trim();
+  if (!actionText) {
+    alert("先に行動を書いてください。例：③ 周辺を観察：人通りや街の違和感を見る");
+    return;
+  }
+
+  const prompt = buildPrompt(actionText);
+  const entry = {
+    sentAt: nowLabel(),
+    text: actionText,
+    status: "AIプロンプト生成済み"
+  };
+
+  appState.ai.pendingAction = actionText;
+  appState.ai.lastPrompt = prompt;
+  appState.ai.sendQueue.push(entry);
+  appState.story.actionHistory.push(entry);
+  $("promptBox").value = prompt;
+  saveState("送信準備OK");
+
+  copyText(prompt, false);
+  $("saveStatus").textContent = "送信プロンプト生成・コピー済み";
+}
+
+function extractMainTextForChecks(text) {
+  const match = text.match(/(?:^|\n)##?\s*2[.．]?\s*本文案\s*\n([\s\S]*)/);
+  if (match) return match[1];
+  const matchPlain = text.match(/(?:^|\n)2[.．]\s*本文案\s*\n([\s\S]*)/);
+  if (matchPlain) return matchPlain[1];
+  return text;
+}
+
+function hasUnsafeCombatUi(text) {
+  const lines = text.split(/\n+/);
+  return lines.some((line) => {
+    if (!/戦闘UI/.test(line)) return false;
+    if (/(不可|禁止|出さない|出していない|出しません|なし|無し|未使用|不使用)/.test(line)) return false;
+    return true;
+  });
+}
+
 function runChecks(text) {
   const warnings = [];
   const dangers = [];
+  const checkText = extractMainTextForChecks(text);
 
   const fujiwariAbsent = !appState.artifacts.fujiwari.carriedByHiroki;
   if (fujiwariAbsent) {
-    const fujiwariPattern = /(富士割|宝刀)[\s\S]{0,24}(柄|抜|抜刀|構え|構える|握|握る|振る|納刀|斬|切|突)/;
-    if (fujiwariPattern.test(text)) {
+    const fujiwariPattern = /(富士割|宝刀)[\s\S]{0,24}(柄に触|抜刀|抜く|抜いた|構え|構える|握|握る|振る|納刀|斬|切|突)/;
+    if (fujiwariPattern.test(checkText)) {
       dangers.push("富士割が現在地にないのに、手元・抜刀・構え・攻撃に見える描写があります。");
     }
   }
 
   if (appState.combat.enemyState !== "ENEMY-CONFIRMED") {
-    const combatPatterns = [
-      { pattern: /(ENEMY-CONFIRMED|敵HP|HP[:：]|戦闘UI|討伐報酬|撃破|戦闘開始|ターン)/, msg: "未接敵なのに戦闘UI・敵HP・討伐報酬・ターン処理らしき語があります。" },
-      { pattern: /(妖魔が現れた|敵が現れた|襲いかか|襲撃してきた)/, msg: "NO-CONTACTなのに敵出現が確定している可能性があります。" }
-    ];
-    combatPatterns.forEach(({pattern, msg}) => {
-      if (pattern.test(text)) dangers.push(msg);
-    });
+    if (/(敵HP|HP[:：]\s*\d|討伐報酬|撃破報酬|戦闘開始|ターン処理|第\d+ターン)/.test(checkText) || hasUnsafeCombatUi(checkText)) {
+      dangers.push("未接敵なのに戦闘UI・敵HP・討伐報酬・ターン処理らしき語があります。");
+    }
+    if (/(妖魔が現れた|敵が現れた|敵影が姿を現した|襲いかかってきた|襲撃してきた)/.test(checkText)) {
+      dangers.push("NO-CONTACTなのに敵出現が確定している可能性があります。");
+    }
   }
 
-  if (!appState.communications.masamune.aiMayAutoReply && /伊達政宗[\s\S]{0,40}(返信|届いた|通知|メッセージ|返ってきた|chat_message)/.test(text)) {
+  const masamuneAutoReplyPattern = /(伊達政宗|政宗)[\s\S]{0,60}(返信が届いた|返事が届いた|返ってきた|通知が届いた|メッセージが届いた)|:::writing\{variant="chat_message"[\s\S]{0,120}(伊達政宗|政宗)/;
+  if (!appState.communications.masamune.aiMayAutoReply && masamuneAutoReplyPattern.test(checkText)) {
     warnings.push("政宗は返信待ちです。ユーザー選択なしの返信発生に見える箇所があります。");
   }
 
-  if (!appState.communications.terumoto.aiMayAutoReply && /足利輝統[\s\S]{0,40}(返信|届いた|通知|メッセージ|返ってきた|chat_message)/.test(text)) {
+  const terumotoAutoReplyPattern = /(足利輝統|輝統)[\s\S]{0,60}(返信が届いた|返事が届いた|返ってきた|通知が届いた|メッセージが届いた)|:::writing\{variant="chat_message"[\s\S]{0,120}(足利輝統|輝統)/;
+  if (!appState.communications.terumoto.aiMayAutoReply && terumotoAutoReplyPattern.test(checkText)) {
     warnings.push("足利輝統は返信待ちです。ユーザー選択なしの返信発生に見える箇所があります。");
   }
 
-  if (/4月8日|居間|玄関前/.test(text) && !/旧境界|巻き戻し禁止/.test(text)) {
+  if (/4月8日|居間|玄関前/.test(checkText) && !/旧境界|巻き戻し禁止/.test(checkText)) {
     warnings.push("旧境界（4月8日居間・玄関前）への巻き戻しに見える語があります。");
   }
 
   const gatePattern = /(死亡|死んだ|片腕を失|欠損|裏切|離反|婚姻|結婚|妊娠|子供|後継者|神様契約|神器継承|富士抜き正式使用|武具喪失|家の公式承認|関係が確定|大移動|武家秩序)/;
-  if (gatePattern.test(text) && !/(不可逆ゲート|確認カード|ここで停止|確定しない)/.test(text)) {
+  if (gatePattern.test(checkText) && !/(不可逆ゲート|確認カード|ここで停止|確定しない|候補|保留)/.test(checkText)) {
     dangers.push("不可逆事項らしき内容が、確認停止なしに出ています。");
   }
 
@@ -168,11 +262,12 @@ function runChecks(text) {
     dangers.push("AI返答内で保存済み・Drive反映済み・正史確定扱いにしています。");
   }
 
-  if (/スマホ|通知|DM|グルチャ|作戦室通知|任務通知|返信済み|送信済み/.test(text) && !/:::writing\{variant="chat_message"/.test(text)) {
+  const notificationLike = /(DM|グルチャ|作戦室通知|任務通知|送信済み|返信済み|通知が届いた|メッセージが届いた)/.test(checkText);
+  if (notificationLike && !/:::writing\{variant="chat_message"/.test(checkText)) {
     warnings.push("通知・DM・作戦室通知らしき内容がありますが、chat_message writing block形式が見当たりません。");
   }
 
-  if (text.includes("---")) {
+  if (checkText.includes("---")) {
     warnings.push("薄い区切り線「---」が含まれています。日ノ本本編形式では避ける対象です。");
   }
 
@@ -192,6 +287,20 @@ function displayChecks(result) {
   $("rejectButton").disabled = false;
 }
 
+function autoCheckResponseSoon() {
+  clearTimeout(responseCheckTimer);
+  responseCheckTimer = setTimeout(() => {
+    const text = $("responseBox").value.trim();
+    if (!text) return;
+    appState.ai.lastResponse = text;
+    const result = runChecks(text);
+    appState.ai.lastCheck = result;
+    displayChecks(result);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState, null, 2));
+    $("saveStatus").textContent = result.ok ? "自動検査OK" : "自動検査注意";
+  }, 500);
+}
+
 function adoptResponse() {
   const text = $("responseBox").value.trim();
   if (!text) return;
@@ -203,6 +312,7 @@ function adoptResponse() {
   }
   const entry = {
     adoptedAt: nowLabel(),
+    playerAction: appState.ai.pendingAction || "",
     text,
     check
   };
@@ -210,6 +320,13 @@ function adoptResponse() {
   appState.story.currentText = text;
   appState.ai.lastResponse = text;
   appState.ai.lastCheck = check;
+  if (appState.ai.pendingAction) {
+    appState.story.actionHistory.push({
+      sentAt: nowLabel(),
+      text: appState.ai.pendingAction,
+      status: "返答採用済み"
+    });
+  }
   saveState("採用済み");
 }
 
@@ -218,6 +335,7 @@ function rejectResponse() {
   if (!text) return;
   appState.story.rejectedLog.push({
     rejectedAt: nowLabel(),
+    playerAction: appState.ai.pendingAction || "",
     text,
     check: runChecks(text)
   });
@@ -237,11 +355,12 @@ function exportState() {
   URL.revokeObjectURL(url);
 }
 
-function copyText(text) {
+function copyText(text, showStatus = true) {
+  if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
-    $("saveStatus").textContent = "コピーしました";
+    if (showStatus) $("saveStatus").textContent = "コピーしました";
   }).catch(() => {
-    alert("コピーに失敗しました。手動で選択してください。");
+    if (showStatus) alert("コピーに失敗しました。手動で選択してください。");
   });
 }
 
@@ -254,15 +373,26 @@ function setupEvents() {
     if (!file) return;
     const text = await file.text();
     appState = JSON.parse(text);
+    normalizeState();
     saveState("読込保存");
   });
 
   $("resetButton").addEventListener("click", async () => {
     if (!confirm("初期状態へ戻します。現在のローカル保存は上書きされます。")) return;
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("hinomoto_pwa_state_v1");
     const response = await fetch("./initial-state.json", { cache: "no-store" });
     appState = await response.json();
+    normalizeState();
     saveState("初期化");
+  });
+
+  $("sendActionButton").addEventListener("click", sendAction);
+  $("copyPromptAfterSendButton").addEventListener("click", () => copyText($("promptBox").value));
+  $("clearActionButton").addEventListener("click", () => {
+    $("actionInput").value = "";
+    appState.ai.pendingAction = "";
+    saveState("行動入力クリア");
   });
 
   $("generatePromptButton").addEventListener("click", () => {
@@ -283,11 +413,14 @@ function setupEvents() {
     saveState(result.ok ? "検査OK" : "検査注意");
   });
 
+  $("responseBox").addEventListener("input", autoCheckResponseSoon);
+  $("responseBox").addEventListener("paste", autoCheckResponseSoon);
+
   $("adoptButton").addEventListener("click", adoptResponse);
   $("rejectButton").addEventListener("click", rejectResponse);
 
   $("copyLogButton").addEventListener("click", () => {
-    const text = (appState.story.canonLog || []).map((log, i) => `#${i + 1} ${log.adoptedAt}\n${log.text}`).join("\n\n");
+    const text = (appState.story.canonLog || []).map((log, i) => `#${i + 1} ${log.adoptedAt}\n行動：${log.playerAction || "未記録"}\n${log.text}`).join("\n\n");
     copyText(text);
   });
 
@@ -300,6 +433,7 @@ function setupEvents() {
   $("applyStateButton").addEventListener("click", () => {
     try {
       appState = JSON.parse($("stateEditor").value);
+      normalizeState();
       saveState("JSON適用");
     } catch (err) {
       alert("JSONとして読めません: " + err.message);
@@ -326,7 +460,7 @@ function setupEvents() {
 async function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     try {
-      await navigator.serviceWorker.register("./service-worker.js");
+      await navigator.serviceWorker.register("./service-worker.js?v=020");
     } catch (err) {
       console.warn("Service Worker registration failed", err);
     }

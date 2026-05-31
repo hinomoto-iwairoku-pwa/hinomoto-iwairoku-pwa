@@ -11,7 +11,7 @@
 <body>
   <header class="app-header">
     <div>
-      <p class="eyebrow">外部運用MVP</p>
+      <p class="eyebrow">外部運用MVP v0.2</p>
       <h1>日ノ本異聞録 管理盤</h1>
     </div>
     <button id="installButton" class="ghost hidden">インストール</button>
@@ -43,20 +43,34 @@
     </section>
 
     <section class="card">
-      <h2>AI用プロンプト生成</h2>
-      <p class="hint">この内容をChatGPTへ貼る。AIは文章案だけ作り、PWAが検査し、採用ボタンを押したものだけ正史ログへ入る。</p>
+      <h2>行動入力・送信</h2>
+      <p class="hint">ここに広輝の行動を書く。送信を押すと、現在状態＋行動を含めたAI用プロンプトを自動生成します。</p>
+      <textarea id="actionInput" class="textarea action-textarea" placeholder="例：③ 周辺を観察：人通りや街の違和感を見る"></textarea>
+      <div class="toolbar wrap">
+        <button id="sendActionButton">送信してプロンプト生成</button>
+        <button id="copyPromptAfterSendButton" class="secondary">生成プロンプトをコピー</button>
+        <button id="clearActionButton" class="danger">入力を消す</button>
+      </div>
+      <h3>送信履歴</h3>
+      <div id="actionHistory" class="mini-log"></div>
+    </section>
+
+    <section class="card">
+      <h2>AI用プロンプト</h2>
+      <p class="hint">上の「送信」で自動生成されます。ChatGPT Webへ貼ってください。</p>
       <textarea id="promptBox" class="mono textarea" placeholder="ここにAI用プロンプトが生成されます"></textarea>
       <div class="toolbar wrap">
-        <button id="generatePromptButton">プロンプト生成</button>
+        <button id="generatePromptButton" class="secondary">現在状態だけで再生成</button>
         <button id="copyPromptButton" class="secondary">コピー</button>
       </div>
     </section>
 
     <section class="card">
-      <h2>AI返答貼り戻し・検査</h2>
+      <h2>AI返答貼り戻し・自動検査</h2>
+      <p class="hint">ChatGPTの返答をここへ貼ると、自動で検査します。重大警告がなければ採用できます。</p>
       <textarea id="responseBox" class="textarea" placeholder="ChatGPTの返答をここへ貼り戻す"></textarea>
       <div class="toolbar wrap">
-        <button id="checkButton">返答検査</button>
+        <button id="checkButton">手動で返答検査</button>
         <button id="adoptButton" class="success" disabled>採用して正史ログへ</button>
         <button id="rejectButton" class="danger" disabled>却下ログへ</button>
       </div>

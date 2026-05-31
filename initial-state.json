@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.1.0-mvp",
+    "appVersion": "0.2.0-action-send",
     "createdAt": "2026-05-31",
-    "description": "ChatGPT外で状態・正史ログ・検査を管理する最小プロトタイプ"
+    "description": "行動入力・送信ボタン・自動検査を追加した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
@@ -104,11 +104,15 @@
       "④ 自由行動：自分の言葉で指定する"
     ],
     "canonLog": [],
-    "rejectedLog": []
+    "rejectedLog": [],
+    "actionHistory": []
   },
   "ai": {
     "lastPrompt": "",
     "lastResponse": "",
-    "lastCheck": null
+    "lastCheck": null,
+    "pendingAction": "",
+    "sendQueue": [],
+    "responseAutoCheck": true
   }
 }

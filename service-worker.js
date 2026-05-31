@@ -1,4 +1,4 @@
-const CACHE_NAME = "hinomoto-pwa-mvp-v1";
+const CACHE_NAME = "hinomoto-pwa-mvp-v020";
 const ASSETS = [
   "./",
   "./index.html",
