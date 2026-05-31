@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.55.0-return-to-story",
+    "appVersion": "0.56.0-return-to-play-on-send",
     "createdAt": "2026-05-31",
-    "description": "ChatGPT返答受信後にAIタブではなく本文画面へ自動移動する外部運用PWA"
+    "description": "送信直後もAIタブではなく進行タブへ戻し、返答待ちを表示する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
