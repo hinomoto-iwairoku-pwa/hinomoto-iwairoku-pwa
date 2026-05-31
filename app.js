@@ -1,4 +1,5 @@
-const STORAGE_KEY = "hinomoto_pwa_state_v25";
+const STORAGE_KEY = "hinomoto_pwa_state_v26";
+const STORAGE_KEY_V25 = "hinomoto_pwa_state_v25";
 const STORAGE_KEY_V2 = "hinomoto_pwa_state_v2";
 const STORAGE_KEY_V1 = "hinomoto_pwa_state_v1";
 const BRIDGE_OUTBOX_KEY = "hinomoto_bridge_outbox";
@@ -16,6 +17,14 @@ async function loadInitialState() {
   if (saved) {
     appState = JSON.parse(saved);
     normalizeState();
+    return;
+  }
+
+  const v25Saved = localStorage.getItem(STORAGE_KEY_V25);
+  if (v25Saved) {
+    appState = JSON.parse(v25Saved);
+    normalizeState();
+    saveState("v0.25から引継ぎ");
     return;
   }
 
@@ -43,7 +52,7 @@ async function loadInitialState() {
 
 function normalizeState() {
   appState.meta = appState.meta || {};
-  appState.meta.appVersion = "0.25.0-extension-ready";
+  appState.meta.appVersion = "0.26.0-adopt-dedupe";
   appState.world = appState.world || {};
   appState.protagonist = appState.protagonist || {};
   appState.artifacts = appState.artifacts || {};
@@ -64,6 +73,8 @@ function normalizeState() {
   appState.ai.lastExtensionEvent = appState.ai.lastExtensionEvent || "";
   appState.ai.outbox = appState.ai.outbox || null;
   appState.ai.inbox = appState.ai.inbox || null;
+  appState.ai.lastAdoptedRequestId = appState.ai.lastAdoptedRequestId || "";
+  appState.ai.lastAdoptedTextHash = appState.ai.lastAdoptedTextHash || "";
 }
 
 function nowLabel() {
@@ -415,39 +426,113 @@ function autoCheckResponseSoon() {
   }, 500);
 }
 
+
+function simpleHash(text) {
+  let hash = 0;
+  const s = String(text || "");
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) - hash + s.charCodeAt(i)) | 0;
+  }
+  return String(hash);
+}
+
+function isDuplicateCanonEntry(requestId, text) {
+  const textHash = simpleHash(text);
+  const logs = appState.story.canonLog || [];
+  return logs.some((log) => {
+    if (requestId && log.requestId && log.requestId === requestId) return true;
+    return simpleHash(log.text || "") === textHash;
+  });
+}
+
+function dedupeCanonLog(silent = false) {
+  const logs = appState.story.canonLog || [];
+  const seen = new Set();
+  const deduped = [];
+  let removed = 0;
+
+  for (const log of logs) {
+    const key = (log.requestId ? `req:${log.requestId}` : "") + "|text:" + simpleHash(log.text || "");
+    if (seen.has(key)) {
+      removed += 1;
+      continue;
+    }
+    seen.add(key);
+    deduped.push(log);
+  }
+
+  appState.story.canonLog = deduped;
+  saveState(removed ? `重複${removed}件整理` : "重複なし");
+
+  if (!silent) {
+    alert(removed ? `重複ログを${removed}件整理しました。` : "重複ログは見つかりませんでした。");
+  }
+}
+
+
 function adoptResponse() {
+  const button = $("adoptButton");
   const text = $("responseBox").value.trim();
   if (!text) return;
-  const check = runChecks(text);
-  if (check.dangers.length > 0) {
-    displayChecks(check);
-    alert("重大警告があります。採用できません。");
-    return;
+
+  button.disabled = true;
+  button.classList.add("processing");
+  const oldLabel = button.textContent;
+  button.textContent = "採用処理中...";
+
+  try {
+    const check = runChecks(text);
+    if (check.dangers.length > 0) {
+      displayChecks(check);
+      alert("重大警告があります。採用できません。");
+      return;
+    }
+
+    const requestId = appState.ai.lastRequestId || "";
+    if (isDuplicateCanonEntry(requestId, text)) {
+      displayChecks({ warnings: ["この返答はすでに正史ログへ採用済みです。重複採用は止めました。"], dangers: [], ok: false });
+      alert("この返答はすでに採用済みです。重複追加はしません。");
+      return;
+    }
+
+    const entry = {
+      adoptedAt: nowLabel(),
+      playerAction: appState.ai.pendingAction || "",
+      requestId,
+      text,
+      check
+    };
+
+    appState.story.canonLog.push(entry);
+    appState.story.currentText = text;
+    appState.ai.lastResponse = text;
+    appState.ai.lastCheck = check;
+    appState.ai.lastAdoptedRequestId = requestId;
+    appState.ai.lastAdoptedTextHash = simpleHash(text);
+
+    if (appState.ai.pendingAction) {
+      appState.story.actionHistory.push({
+        sentAt: nowLabel(),
+        text: appState.ai.pendingAction,
+        status: "返答採用済み",
+        requestId
+      });
+    }
+
+    if (appState.ai.outbox) {
+      appState.ai.outbox.status = "adopted";
+      localStorage.setItem(BRIDGE_OUTBOX_KEY, JSON.stringify(appState.ai.outbox));
+    }
+
+    saveState("採用済み");
+    displayChecks({ warnings: [], dangers: [], ok: true });
+  } finally {
+    setTimeout(() => {
+      button.classList.remove("processing");
+      button.textContent = oldLabel;
+      button.disabled = false;
+    }, 900);
   }
-  const entry = {
-    adoptedAt: nowLabel(),
-    playerAction: appState.ai.pendingAction || "",
-    requestId: appState.ai.lastRequestId || "",
-    text,
-    check
-  };
-  appState.story.canonLog.push(entry);
-  appState.story.currentText = text;
-  appState.ai.lastResponse = text;
-  appState.ai.lastCheck = check;
-  if (appState.ai.pendingAction) {
-    appState.story.actionHistory.push({
-      sentAt: nowLabel(),
-      text: appState.ai.pendingAction,
-      status: "返答採用済み",
-      requestId: appState.ai.lastRequestId || ""
-    });
-  }
-  if (appState.ai.outbox) {
-    appState.ai.outbox.status = "adopted";
-    localStorage.setItem(BRIDGE_OUTBOX_KEY, JSON.stringify(appState.ai.outbox));
-  }
-  saveState("採用済み");
 }
 
 function rejectResponse() {
@@ -555,6 +640,7 @@ function setupEvents() {
   $("resetButton").addEventListener("click", async () => {
     if (!confirm("初期状態へ戻します。現在のローカル保存は上書きされます。")) return;
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY_V25);
     localStorage.removeItem(STORAGE_KEY_V2);
     localStorage.removeItem(STORAGE_KEY_V1);
     localStorage.removeItem(BRIDGE_OUTBOX_KEY);
@@ -606,6 +692,8 @@ function setupEvents() {
     copyText(text);
   });
 
+  $("dedupeLogButton").addEventListener("click", () => dedupeCanonLog(false));
+
   $("clearRejectedButton").addEventListener("click", () => {
     if (!confirm("却下ログを削除しますか？")) return;
     appState.story.rejectedLog = [];
@@ -642,7 +730,7 @@ function setupEvents() {
 async function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     try {
-      await navigator.serviceWorker.register("./service-worker.js?v=025");
+      await navigator.serviceWorker.register("./service-worker.js?v=026");
     } catch (err) {
       console.warn("Service Worker registration failed", err);
     }

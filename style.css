@@ -343,3 +343,9 @@ h3 {
   font-size: .86rem;
   margin-top: .35rem;
 }
+
+
+button.processing {
+  opacity: .7;
+  pointer-events: none;
+}

@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.25.0-extension-ready",
+    "appVersion": "0.26.0-adopt-dedupe",
     "createdAt": "2026-05-31",
-    "description": "Firefox拡張連携準備を追加した外部運用PWA"
+    "description": "重複採用防止と正史ログ重複整理を追加した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
@@ -119,6 +119,8 @@
     "lastRequestId": "",
     "lastExtensionEvent": "",
     "outbox": null,
-    "inbox": null
+    "inbox": null,
+    "lastAdoptedRequestId": "",
+    "lastAdoptedTextHash": ""
   }
 }
