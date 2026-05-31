@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.53.0-checker-less-noisy",
+    "appVersion": "0.54.0-tagged-response-format",
     "createdAt": "2026-05-31",
-    "description": "重大警告の誤爆を減らし、本文案中心に検査する外部運用PWA"
+    "description": "ChatGPT返答形式をタグで固定し、bodyだけ本文保存する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
