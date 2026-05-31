@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#0f172a" />
   <title>日ノ本異聞録 管理盤</title>
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style-v034.css?v=034" />
+  <link rel="stylesheet" href="./style-v035.css?v=035" />
 </head>
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">外部運用PWA v0.34</p>
+      <p class="eyebrow">外部運用PWA v0.35</p>
       <h1>日ノ本異聞録 管理盤</h1>
     </div>
     <button id="installButton" class="small ghost hidden">インストール</button>
@@ -49,11 +49,10 @@
           <h2>最新AI本文</h2>
           <span id="latestResponseBadge" class="mini-pill">未受信</span>
         </div>
-        <p class="hint">ChatGPTで作られた本文をここに表示します。通常画面でも大きく読めるように表示します。未採用の返答は、採用するまで正史ではありません。</p>
+        <p class="hint">ChatGPTで作られた本文をここに表示します。この画面でそのまま大きく読めます。採用するまで正史ではありません。未採用の返答は、採用するまで正史ではありません。</p>
         <div id="parsedResponseInfo" class="parsed-info">本文案と行動候補を自動分解します。</div>
         <div id="latestResponseText" class="latest-response-box">まだAI返答はありません。</div>
         <div class="toolbar grid-2">
-          <button id="openReaderButton" class="secondary">大きく読む</button>
           <button id="quickAdoptButton" class="success" disabled>この本文を採用</button>
           <button id="goNextActionButton" class="secondary">次の行動へ</button>
           <button id="jumpToResponseButton" class="secondary">返答欄へ</button>
@@ -176,22 +175,6 @@
       </section>
     </section>
   </main>
-
-  <div id="readerOverlay" class="reader-overlay hidden" role="dialog" aria-modal="true">
-    <div class="reader-header">
-      <div>
-        <p class="eyebrow">読書モード</p>
-        <h2>最新AI本文</h2>
-      </div>
-      <button id="closeReaderButton" class="small ghost">閉じる</button>
-    </div>
-    <div id="readerText" class="reader-text">まだAI返答はありません。</div>
-    <div class="reader-actions">
-      <button id="readerAdoptButton" class="big success" disabled>この本文を採用</button>
-      <button id="readerJumpButton" class="big secondary">返答欄を見る</button>
-    </div>
-  </div>
-
-  <script src="./app-v034.js?v=034"></script>
+  <script src="./app-v035.js?v=035"></script>
 </body>
 </html>
