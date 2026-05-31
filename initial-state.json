@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.50.0-backup-during-review",
+    "appVersion": "0.51.0-adopt-button-fix",
     "createdAt": "2026-05-31",
-    "description": "未採用本文の確認中でもJSON出力と設定確認ができる外部運用PWA"
+    "description": "注意だけなら採用できるよう採用ボタン判定を修正した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
