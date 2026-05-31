@@ -1,0 +1,17 @@
+{
+  "name": "日ノ本異聞録 管理盤",
+  "short_name": "日ノ本管理盤",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1f2937",
+  "description": "日ノ本異聞録をChatGPT外で状態管理するPWAスターター",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

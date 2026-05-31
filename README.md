@@ -1,16 +1,61 @@
-## Hi there 👋
+# 日ノ本異聞録 外部運用PWA スターター
 
-<!--
-**hinomoto-iwairoku-pwa/hinomoto-iwairoku-pwa** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+これは、ChatGPT外で「日ノ本異聞録：歴史の継承者」の状態・正史ログ・AI返答検査を管理するための最小プロトタイプです。
 
-Here are some ideas to get you started:
+## 方針
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+- AIは文章案だけ作る
+- PWAが状態を保持する
+- PWAがAI返答を検査する
+- ユーザーが採用した返答だけ正史ログへ入る
+- 保存済み・Drive反映済み・正史確定はAIに言わせない
+
+## 入っているファイル
+
+- `index.html`：画面本体
+- `style.css`：見た目
+- `app.js`：状態管理・プロンプト生成・返答検査・採用/却下
+- `manifest.json`：PWA設定
+- `service-worker.js`：オフラインキャッシュ
+- `initial-state.json`：初期状態
+- `icon.svg`：PWAアイコン
+
+## 使い方
+
+1. GitHubで新しいリポジトリを作る
+2. このZIPの中身をアップロードする
+3. GitHub Pagesを有効化する
+4. Android ChromeでPagesのURLを開く
+5. 「ホーム画面に追加」またはインストールする
+
+## 基本操作
+
+1. PWAで「プロンプト生成」
+2. 生成された内容をChatGPTへ貼る
+3. ChatGPT返答をPWAへ貼り戻す
+4. 「返答検査」
+5. 重大警告がなければ「採用して正史ログへ」
+6. 重大警告があれば却下または修正して再検査
+
+## 初期状態
+
+- 2026年4月11日（土）朝
+- 現在地：仙台城方面へ徒歩移動中
+- 富士割：仙台住居の富士割祭壇
+- 富士抜き：本道神社本社奉納
+- 政宗：返信待ち
+- 足利輝統：返信待ち
+- 作戦室：新規確認なし、通常任務受諾なし、出動なし
+- 敵状態：NO-CONTACT
+
+## 注意
+
+このMVPは最小版です。今後追加するなら、以下が候補です。
+
+- 通知スレッド個別管理
+- 任務ステージ管理
+- 富士割持ち出し確認UI
+- 不可逆ゲート確認カード
+- chat_message形式の構文検査強化
+- 正史ログの章管理
+- Google Drive / GitHub連携

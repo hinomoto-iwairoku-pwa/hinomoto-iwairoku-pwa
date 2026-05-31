@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f2937" />
+  <title>日ノ本異聞録 外部運用PWA</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">外部運用MVP</p>
+      <h1>日ノ本異聞録 管理盤</h1>
+    </div>
+    <button id="installButton" class="ghost hidden">インストール</button>
+  </header>
+
+  <main class="layout">
+    <section class="card status-card">
+      <div class="card-title-row">
+        <h2>現在状態</h2>
+        <span id="saveStatus" class="pill">未保存</span>
+      </div>
+      <div id="statusGrid" class="status-grid"></div>
+      <div class="toolbar wrap">
+        <button id="saveNowButton">保存</button>
+        <button id="exportButton" class="secondary">JSON出力</button>
+        <label class="file-button">
+          JSON読込
+          <input id="importInput" type="file" accept="application/json" />
+        </label>
+        <button id="resetButton" class="danger">初期状態へ戻す</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>本文・行動候補</h2>
+      <div id="storyText" class="story-box"></div>
+      <h3>行動候補</h3>
+      <ul id="candidateList" class="candidate-list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>AI用プロンプト生成</h2>
+      <p class="hint">この内容をChatGPTへ貼る。AIは文章案だけ作り、PWAが検査し、採用ボタンを押したものだけ正史ログへ入る。</p>
+      <textarea id="promptBox" class="mono textarea" placeholder="ここにAI用プロンプトが生成されます"></textarea>
+      <div class="toolbar wrap">
+        <button id="generatePromptButton">プロンプト生成</button>
+        <button id="copyPromptButton" class="secondary">コピー</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>AI返答貼り戻し・検査</h2>
+      <textarea id="responseBox" class="textarea" placeholder="ChatGPTの返答をここへ貼り戻す"></textarea>
+      <div class="toolbar wrap">
+        <button id="checkButton">返答検査</button>
+        <button id="adoptButton" class="success" disabled>採用して正史ログへ</button>
+        <button id="rejectButton" class="danger" disabled>却下ログへ</button>
+      </div>
+      <div id="checkResults" class="check-results"></div>
+    </section>
+
+    <section class="card">
+      <h2>正史ログ</h2>
+      <div class="toolbar wrap">
+        <button id="copyLogButton" class="secondary">ログをコピー</button>
+        <button id="clearRejectedButton" class="danger">却下ログ削除</button>
+      </div>
+      <div id="canonLog" class="log-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>状態JSON編集</h2>
+      <p class="hint">手動修正用。壊れたら初期状態へ戻せます。</p>
+      <textarea id="stateEditor" class="mono textarea tall"></textarea>
+      <div class="toolbar wrap">
+        <button id="applyStateButton">JSONを適用</button>
+        <button id="refreshStateButton" class="secondary">現在状態を再表示</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>AI返答は採用されるまで正史ではありません。保存済み・Drive反映済み扱いにはしません。</p>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>

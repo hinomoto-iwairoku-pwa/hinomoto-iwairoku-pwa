@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "appName": "日ノ本異聞録 外部運用PWA",
+    "appVersion": "0.1.0-mvp",
+    "createdAt": "2026-05-31",
+    "description": "ChatGPT外で状態・正史ログ・検査を管理する最小プロトタイプ"
+  },
+  "world": {
+    "projectName": "日ノ本異聞録：歴史の継承者",
+    "mode": "external_control",
+    "date": "2026-04-11",
+    "weekday": "土",
+    "timeOfDay": "朝",
+    "currentLocation": "仙台城方面へ徒歩移動中",
+    "previousBoundary": "2026年4月8日 居間・玄関前は旧境界。巻き戻し禁止。",
+    "latestKnownScene": "4月11日朝。広輝は仙台城方面へ徒歩移動中。"
+  },
+  "protagonist": {
+    "name": "本道広輝",
+    "age": 21,
+    "mode": "日常外出中",
+    "currentHeldItems": [
+      "スマホ",
+      "財布",
+      "日常携行品"
+    ],
+    "notes": "日常外出中。富士割は携行していない。"
+  },
+  "artifacts": {
+    "fujiwari": {
+      "name": "富士割",
+      "location": "仙台住居の富士割祭壇",
+      "carriedByHiroki": false,
+      "showInDailyText": false,
+      "rules": [
+        "日常外出では手元に描写しない",
+        "任務・出動・訓練・異聞事件対応時のみ主武装として持ち出し得る",
+        "現在地にない状態で柄に触れる・抜く・構える描写は禁止"
+      ]
+    },
+    "fujinuki": {
+      "name": "富士抜き",
+      "location": "本道神社本社奉納",
+      "carriedByHiroki": false,
+      "irreversibleGate": true,
+      "rules": [
+        "正式使用は不可逆ゲート"
+      ]
+    }
+  },
+  "communications": {
+    "masamune": {
+      "displayName": "伊達政宗",
+      "thread": "個チャ",
+      "state": "返信待ち",
+      "aiMayAutoReply": false,
+      "notes": "勝手に返信を発生させない"
+    },
+    "terumoto": {
+      "displayName": "足利輝統",
+      "thread": "個チャ",
+      "state": "返信待ち",
+      "aiMayAutoReply": false,
+      "notes": "勝手に返信を発生させない"
+    },
+    "operationRoom": {
+      "displayName": "作戦室",
+      "newCheck": false,
+      "normalMissionAccepted": false,
+      "sortie": false,
+      "notes": "この朝リセット後、新規確認なし・受諾なし・出動なし"
+    }
+  },
+  "combat": {
+    "enemyState": "NO-CONTACT",
+    "enemyConfirmed": false,
+    "combatUiAllowed": false,
+    "rules": [
+      "ENEMY-CONFIRMED以外は戦闘UI禁止",
+      "痕跡・違和感・ログだけなら調査・封鎖・分析へ送る"
+    ]
+  },
+  "irreversibleGates": [
+    "死亡",
+    "重傷・欠損",
+    "裏切り・離反",
+    "婚姻",
+    "妊娠・子供・後継者",
+    "神様契約",
+    "神器継承",
+    "富士抜き正式使用",
+    "武具喪失",
+    "家の公式承認",
+    "関係の不可逆確定",
+    "本編現在地の大移動",
+    "武家秩序を変える決定"
+  ],
+  "story": {
+    "currentText": "2026年4月11日（土）朝。広輝は仙台城方面へ徒歩移動中。ここから先はPWA側で状態を保持し、AI返答は採用されるまで正史にしない。",
+    "actionCandidates": [
+      "① 仙台城方面へ進む：周囲を観察しながら歩く",
+      "② スマホを確認：返信待ち状態だけ確認する",
+      "③ 周辺を観察：違和感や人通りを見る",
+      "④ 自由行動：自分の言葉で指定する"
+    ],
+    "canonLog": [],
+    "rejectedLog": []
+  },
+  "ai": {
+    "lastPrompt": "",
+    "lastResponse": "",
+    "lastCheck": null
+  }
+}
