@@ -304,3 +304,42 @@ h3 {
   font-size: .86rem;
   margin-top: .35rem;
 }
+
+
+.extension-card {
+  border-color: rgba(34, 197, 94, .28);
+}
+
+.mini-status {
+  margin-top: .75rem;
+}
+
+.action-textarea {
+  min-height: 7.5rem;
+}
+
+.mini-log {
+  display: grid;
+  gap: .55rem;
+  margin-top: .6rem;
+}
+
+.mini-log-item {
+  background: rgba(255,255,255,.045);
+  border: 1px solid var(--line);
+  border-radius: .9rem;
+  padding: .7rem;
+  line-height: 1.55;
+}
+
+.mini-log-item small {
+  display: block;
+  color: var(--muted);
+  margin-bottom: .2rem;
+}
+
+.status-small {
+  color: var(--muted);
+  font-size: .86rem;
+  margin-top: .35rem;
+}

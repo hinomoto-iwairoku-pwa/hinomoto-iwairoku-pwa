@@ -11,7 +11,7 @@
 <body>
   <header class="app-header">
     <div>
-      <p class="eyebrow">外部運用MVP v0.2</p>
+      <p class="eyebrow">外部運用MVP v0.25</p>
       <h1>日ノ本異聞録 管理盤</h1>
     </div>
     <button id="installButton" class="ghost hidden">インストール</button>
@@ -35,6 +35,24 @@
       </div>
     </section>
 
+    <section class="card extension-card">
+      <div class="card-title-row">
+        <h2>拡張連携 v0.25</h2>
+        <span id="extensionStatus" class="pill">未接続</span>
+      </div>
+      <p class="hint">Firefox拡張があとで使う入口です。今は準備段階。送信したプロンプトを outbox に置き、拡張から返答が来たら自動で返答欄へ入れて検査します。</p>
+      <div class="status-grid mini-status">
+        <div class="status-item"><b>最終リクエストID</b><span id="requestIdLabel">なし</span></div>
+        <div class="status-item"><b>最終イベント</b><span id="extensionEventLabel">なし</span></div>
+        <div class="status-item"><b>送信待ち</b><span id="outboxLabel">なし</span></div>
+      </div>
+      <div class="toolbar wrap">
+        <button id="copyOutboxButton" class="secondary">outboxをコピー</button>
+        <button id="clearBridgeButton" class="danger">連携キューを消す</button>
+        <button id="simulateResponseButton" class="secondary">返答受信テスト</button>
+      </div>
+    </section>
+
     <section class="card">
       <h2>本文・行動候補</h2>
       <div id="storyText" class="story-box"></div>
@@ -44,7 +62,7 @@
 
     <section class="card">
       <h2>行動入力・送信</h2>
-      <p class="hint">ここに広輝の行動を書く。送信を押すと、現在状態＋行動を含めたAI用プロンプトを自動生成します。</p>
+      <p class="hint">ここに広輝の行動を書く。送信を押すと、AI用プロンプトを作り、拡張連携用 outbox にも入れます。</p>
       <textarea id="actionInput" class="textarea action-textarea" placeholder="例：③ 周辺を観察：人通りや街の違和感を見る"></textarea>
       <div class="toolbar wrap">
         <button id="sendActionButton">送信してプロンプト生成</button>
@@ -57,7 +75,7 @@
 
     <section class="card">
       <h2>AI用プロンプト</h2>
-      <p class="hint">上の「送信」で自動生成されます。ChatGPT Webへ貼ってください。</p>
+      <p class="hint">上の「送信」で自動生成されます。Firefox拡張がない間は、ここをChatGPT Webへ貼ってください。</p>
       <textarea id="promptBox" class="mono textarea" placeholder="ここにAI用プロンプトが生成されます"></textarea>
       <div class="toolbar wrap">
         <button id="generatePromptButton" class="secondary">現在状態だけで再生成</button>
@@ -67,7 +85,7 @@
 
     <section class="card">
       <h2>AI返答貼り戻し・自動検査</h2>
-      <p class="hint">ChatGPTの返答をここへ貼ると、自動で検査します。重大警告がなければ採用できます。</p>
+      <p class="hint">ChatGPTの返答をここへ貼ると、自動で検査します。拡張から返答が戻った場合もここに入ります。</p>
       <textarea id="responseBox" class="textarea" placeholder="ChatGPTの返答をここへ貼り戻す"></textarea>
       <div class="toolbar wrap">
         <button id="checkButton">手動で返答検査</button>

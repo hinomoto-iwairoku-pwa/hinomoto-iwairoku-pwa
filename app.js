@@ -1,7 +1,13 @@
-const STORAGE_KEY = "hinomoto_pwa_state_v2";
+const STORAGE_KEY = "hinomoto_pwa_state_v25";
+const STORAGE_KEY_V2 = "hinomoto_pwa_state_v2";
+const STORAGE_KEY_V1 = "hinomoto_pwa_state_v1";
+const BRIDGE_OUTBOX_KEY = "hinomoto_bridge_outbox";
+const BRIDGE_INBOX_KEY = "hinomoto_bridge_inbox";
+
 let appState = null;
 let deferredInstallPrompt = null;
 let responseCheckTimer = null;
+let bridgePollTimer = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -13,10 +19,17 @@ async function loadInitialState() {
     return;
   }
 
-  // v0.1からの引き継ぎがあれば読む
-  const oldSaved = localStorage.getItem("hinomoto_pwa_state_v1");
-  if (oldSaved) {
-    appState = JSON.parse(oldSaved);
+  const v2Saved = localStorage.getItem(STORAGE_KEY_V2);
+  if (v2Saved) {
+    appState = JSON.parse(v2Saved);
+    normalizeState();
+    saveState("v0.2から引継ぎ");
+    return;
+  }
+
+  const v1Saved = localStorage.getItem(STORAGE_KEY_V1);
+  if (v1Saved) {
+    appState = JSON.parse(v1Saved);
     normalizeState();
     saveState("v0.1から引継ぎ");
     return;
@@ -30,7 +43,7 @@ async function loadInitialState() {
 
 function normalizeState() {
   appState.meta = appState.meta || {};
-  appState.meta.appVersion = "0.2.0-action-send";
+  appState.meta.appVersion = "0.25.0-extension-ready";
   appState.world = appState.world || {};
   appState.protagonist = appState.protagonist || {};
   appState.artifacts = appState.artifacts || {};
@@ -45,10 +58,20 @@ function normalizeState() {
   appState.ai.sendQueue = appState.ai.sendQueue || [];
   appState.ai.pendingAction = appState.ai.pendingAction || "";
   appState.ai.responseAutoCheck = true;
+  appState.ai.extensionMode = true;
+  appState.ai.extensionStatus = appState.ai.extensionStatus || "未接続";
+  appState.ai.lastRequestId = appState.ai.lastRequestId || "";
+  appState.ai.lastExtensionEvent = appState.ai.lastExtensionEvent || "";
+  appState.ai.outbox = appState.ai.outbox || null;
+  appState.ai.inbox = appState.ai.inbox || null;
 }
 
 function nowLabel() {
   return new Date().toLocaleString("ja-JP", { hour12: false });
+}
+
+function makeRequestId() {
+  return `hnm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function saveState(label = "保存しました") {
@@ -72,6 +95,21 @@ function renderStatus() {
     ["作戦室", `新規確認：${appState.communications.operationRoom?.newCheck ? "あり" : "なし"} / 受諾：${appState.communications.operationRoom?.normalMissionAccepted ? "あり" : "なし"}`],
   ];
   $("statusGrid").innerHTML = items.map(([k, v]) => `<div class="status-item"><b>${escapeHtml(k)}</b><span>${escapeHtml(v)}</span></div>`).join("");
+}
+
+function renderExtensionStatus() {
+  const status = appState.ai.extensionStatus || "未接続";
+  $("extensionStatus").textContent = status;
+  $("requestIdLabel").textContent = appState.ai.lastRequestId || "なし";
+  $("extensionEventLabel").textContent = appState.ai.lastExtensionEvent || "なし";
+
+  let outbox = appState.ai.outbox;
+  if (!outbox) {
+    try {
+      outbox = JSON.parse(localStorage.getItem(BRIDGE_OUTBOX_KEY) || "null");
+    } catch {}
+  }
+  $("outboxLabel").textContent = outbox ? `${outbox.status || "待機"} / ${outbox.requestId || "IDなし"}` : "なし";
 }
 
 function renderStory() {
@@ -109,6 +147,7 @@ function renderStateEditor() {
 function render() {
   if (!appState) return;
   renderStatus();
+  renderExtensionStatus();
   renderStory();
   renderActionHistory();
   renderLogs();
@@ -183,21 +222,96 @@ function sendAction() {
   }
 
   const prompt = buildPrompt(actionText);
+  const requestId = makeRequestId();
   const entry = {
     sentAt: nowLabel(),
     text: actionText,
-    status: "AIプロンプト生成済み"
+    status: "AIプロンプト生成済み",
+    requestId
   };
 
   appState.ai.pendingAction = actionText;
   appState.ai.lastPrompt = prompt;
+  appState.ai.lastRequestId = requestId;
+  appState.ai.lastExtensionEvent = "PWA_SEND_READY";
+  appState.ai.extensionStatus = "送信待ち";
   appState.ai.sendQueue.push(entry);
   appState.story.actionHistory.push(entry);
+
+  const outbox = {
+    source: "HINOMOTO_PWA",
+    type: "PROMPT_READY",
+    requestId,
+    createdAt: new Date().toISOString(),
+    actionText,
+    prompt,
+    status: "waiting_for_extension"
+  };
+
+  appState.ai.outbox = outbox;
+  localStorage.setItem(BRIDGE_OUTBOX_KEY, JSON.stringify(outbox));
+  window.postMessage(outbox, location.origin);
+
   $("promptBox").value = prompt;
   saveState("送信準備OK");
 
   copyText(prompt, false);
   $("saveStatus").textContent = "送信プロンプト生成・コピー済み";
+}
+
+function receiveExtensionResponse(payload) {
+  if (!payload || !payload.responseText) return;
+  appState.ai.extensionStatus = "返答受信";
+  appState.ai.lastExtensionEvent = payload.type || "AI_RESPONSE";
+  appState.ai.inbox = payload;
+  appState.ai.lastResponse = payload.responseText;
+
+  localStorage.setItem(BRIDGE_INBOX_KEY, JSON.stringify(payload));
+
+  const outbox = appState.ai.outbox || {};
+  outbox.status = "response_received";
+  appState.ai.outbox = outbox;
+  localStorage.setItem(BRIDGE_OUTBOX_KEY, JSON.stringify(outbox));
+
+  $("responseBox").value = payload.responseText;
+  const result = runChecks(payload.responseText);
+  appState.ai.lastCheck = result;
+  displayChecks(result);
+  saveState(result.ok ? "拡張返答・検査OK" : "拡張返答・検査注意");
+}
+
+function pollBridgeInbox() {
+  try {
+    const raw = localStorage.getItem(BRIDGE_INBOX_KEY);
+    if (!raw) return;
+    const payload = JSON.parse(raw);
+    if (!payload || !payload.responseText) return;
+    if (appState.ai.inbox && appState.ai.inbox.requestId === payload.requestId && appState.ai.inbox.receivedAt === payload.receivedAt) return;
+    receiveExtensionResponse(payload);
+  } catch (err) {
+    console.warn("bridge inbox parse failed", err);
+  }
+}
+
+function startBridgeListeners() {
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (!data || data.source !== "HINOMOTO_EXTENSION") return;
+
+    if (data.type === "EXTENSION_HELLO") {
+      appState.ai.extensionStatus = "接続済み";
+      appState.ai.lastExtensionEvent = "EXTENSION_HELLO";
+      saveState("拡張接続");
+      return;
+    }
+
+    if (data.type === "AI_RESPONSE") {
+      receiveExtensionResponse(data);
+    }
+  });
+
+  bridgePollTimer = setInterval(pollBridgeInbox, 1500);
 }
 
 function extractMainTextForChecks(text) {
@@ -313,6 +427,7 @@ function adoptResponse() {
   const entry = {
     adoptedAt: nowLabel(),
     playerAction: appState.ai.pendingAction || "",
+    requestId: appState.ai.lastRequestId || "",
     text,
     check
   };
@@ -324,8 +439,13 @@ function adoptResponse() {
     appState.story.actionHistory.push({
       sentAt: nowLabel(),
       text: appState.ai.pendingAction,
-      status: "返答採用済み"
+      status: "返答採用済み",
+      requestId: appState.ai.lastRequestId || ""
     });
+  }
+  if (appState.ai.outbox) {
+    appState.ai.outbox.status = "adopted";
+    localStorage.setItem(BRIDGE_OUTBOX_KEY, JSON.stringify(appState.ai.outbox));
   }
   saveState("採用済み");
 }
@@ -336,10 +456,15 @@ function rejectResponse() {
   appState.story.rejectedLog.push({
     rejectedAt: nowLabel(),
     playerAction: appState.ai.pendingAction || "",
+    requestId: appState.ai.lastRequestId || "",
     text,
     check: runChecks(text)
   });
   appState.ai.lastResponse = text;
+  if (appState.ai.outbox) {
+    appState.ai.outbox.status = "rejected";
+    localStorage.setItem(BRIDGE_OUTBOX_KEY, JSON.stringify(appState.ai.outbox));
+  }
   saveState("却下済み");
   $("responseBox").value = "";
   $("checkResults").innerHTML = "";
@@ -364,6 +489,56 @@ function copyText(text, showStatus = true) {
   });
 }
 
+function copyOutbox() {
+  const raw = localStorage.getItem(BRIDGE_OUTBOX_KEY);
+  if (!raw) {
+    alert("outboxは空です。先に行動を送信してください。");
+    return;
+  }
+  copyText(raw);
+}
+
+function clearBridgeQueue() {
+  localStorage.removeItem(BRIDGE_OUTBOX_KEY);
+  localStorage.removeItem(BRIDGE_INBOX_KEY);
+  appState.ai.outbox = null;
+  appState.ai.inbox = null;
+  appState.ai.extensionStatus = "未接続";
+  appState.ai.lastExtensionEvent = "BRIDGE_CLEARED";
+  saveState("連携キュー削除");
+}
+
+function simulateExtensionResponse() {
+  const responseText = `## 1. 事故防止チェック
+
+現在地は2026年4月11日（土）朝／仙台城方面へ徒歩移動中のまま。
+富士割は仙台住居の富士割祭壇にあり、広輝は日常外出中のため手元描写はしない。
+富士抜きは本道神社本社奉納のまま扱う。
+政宗・足利輝統の返信は発生させない。
+敵状態はNO-CONTACTのため、戦闘処理・敵情報・報酬処理は出さない。
+不可逆事項は確定しない。
+
+## 2. 本文案
+
+これは拡張連携テスト用の仮返答です。
+実際の本編案ではなく、PWAが拡張から返答を受け取り、自動検査できるかを確認するための文章です。
+
+**行動候補**
+- ① 仙台城方面へ進む：周囲を観察しながら歩く
+- ② スマホを確認：返信待ち状態だけ確認する
+- ③ 周辺をさらに観察：人通りと街路樹の違和感を見る
+- ④ 自由行動：自分の言葉で指定する`;
+
+  const payload = {
+    source: "HINOMOTO_EXTENSION",
+    type: "AI_RESPONSE",
+    requestId: appState.ai.lastRequestId || makeRequestId(),
+    receivedAt: new Date().toISOString(),
+    responseText
+  };
+  window.postMessage(payload, location.origin);
+}
+
 function setupEvents() {
   $("saveNowButton").addEventListener("click", () => saveState("保存しました"));
   $("exportButton").addEventListener("click", exportState);
@@ -380,7 +555,10 @@ function setupEvents() {
   $("resetButton").addEventListener("click", async () => {
     if (!confirm("初期状態へ戻します。現在のローカル保存は上書きされます。")) return;
     localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem("hinomoto_pwa_state_v1");
+    localStorage.removeItem(STORAGE_KEY_V2);
+    localStorage.removeItem(STORAGE_KEY_V1);
+    localStorage.removeItem(BRIDGE_OUTBOX_KEY);
+    localStorage.removeItem(BRIDGE_INBOX_KEY);
     const response = await fetch("./initial-state.json", { cache: "no-store" });
     appState = await response.json();
     normalizeState();
@@ -394,6 +572,10 @@ function setupEvents() {
     appState.ai.pendingAction = "";
     saveState("行動入力クリア");
   });
+
+  $("copyOutboxButton").addEventListener("click", copyOutbox);
+  $("clearBridgeButton").addEventListener("click", clearBridgeQueue);
+  $("simulateResponseButton").addEventListener("click", simulateExtensionResponse);
 
   $("generatePromptButton").addEventListener("click", () => {
     const prompt = buildPrompt();
@@ -460,7 +642,7 @@ function setupEvents() {
 async function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     try {
-      await navigator.serviceWorker.register("./service-worker.js?v=020");
+      await navigator.serviceWorker.register("./service-worker.js?v=025");
     } catch (err) {
       console.warn("Service Worker registration failed", err);
     }
@@ -470,6 +652,7 @@ async function registerServiceWorker() {
 (async function init() {
   await loadInitialState();
   setupEvents();
+  startBridgeListeners();
   render();
   registerServiceWorker();
 })();

@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.2.0-action-send",
+    "appVersion": "0.25.0-extension-ready",
     "createdAt": "2026-05-31",
-    "description": "行動入力・送信ボタン・自動検査を追加した外部運用PWA"
+    "description": "Firefox拡張連携準備を追加した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
@@ -113,6 +113,12 @@
     "lastCheck": null,
     "pendingAction": "",
     "sendQueue": [],
-    "responseAutoCheck": true
+    "responseAutoCheck": true,
+    "extensionMode": true,
+    "extensionStatus": "未接続",
+    "lastRequestId": "",
+    "lastExtensionEvent": "",
+    "outbox": null,
+    "inbox": null
   }
 }
