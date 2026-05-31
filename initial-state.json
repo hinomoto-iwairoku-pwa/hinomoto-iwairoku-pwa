@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.29.0-response-preview",
+    "appVersion": "0.30.0-reader-mode",
     "createdAt": "2026-05-31",
-    "description": "ChatGPT生成本文を行動入力の上に表示する外部運用PWA"
+    "description": "最新AI本文を大きく読む読書モードを追加した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
