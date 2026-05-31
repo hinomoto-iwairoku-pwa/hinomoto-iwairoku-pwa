@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.41.0-large-inline-default",
+    "appVersion": "0.42.0-document-first",
     "createdAt": "2026-05-31",
-    "description": "読書モードを廃止し、通常画面で大きい本文を維持して行動入力へスクロールできる外部運用PWA"
+    "description": "本文をゲーム画面の主役にした文章メイン外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
