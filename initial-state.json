@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.45.0-document-action-fixed",
+    "appVersion": "0.47.0-reject-flow",
     "createdAt": "2026-05-31",
-    "description": "本文の直下に採用と次行動入力を必ず表示する外部運用PWA"
+    "description": "採用しない導線を追加した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
