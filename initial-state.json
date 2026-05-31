@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.43.0-wide-document-first",
+    "appVersion": "0.44.0-document-action-flow",
     "createdAt": "2026-05-31",
-    "description": "本文の横幅を最大化し、文章をゲーム画面の主役にした外部運用PWA"
+    "description": "文章メイン画面で本文の下に必ず採用ボタンと行動入力を表示する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
