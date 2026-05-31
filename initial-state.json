@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.37.0-contained-text-scroll",
+    "appVersion": "0.38.0-reader-sized-inline",
     "createdAt": "2026-05-31",
-    "description": "最新AI本文のスクロールを本文枠内に閉じ込める外部運用PWA"
+    "description": "最新AI本文を読書モード基準の大きさで通常表示する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
