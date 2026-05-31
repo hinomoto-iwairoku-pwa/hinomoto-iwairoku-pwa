@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.57.0-v03-extension-compatible",
+    "appVersion": "0.58.0-response-recovery",
     "createdAt": "2026-05-31",
-    "description": "Firefox拡張v0.3互換。送信直後はPWAへ戻さず、返答完了後だけ本文へ戻る外部運用PWA"
+    "description": "AI返答の取り込みを強化し、返答後に本文表示へ戻す外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
