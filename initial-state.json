@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.51.0-adopt-button-fix",
+    "appVersion": "0.52.0-adopt-gate-on-click",
     "createdAt": "2026-05-31",
-    "description": "注意だけなら採用できるよう採用ボタン判定を修正した外部運用PWA"
+    "description": "採用ボタンを無効化せず、押下時に重大警告だけ止める外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
