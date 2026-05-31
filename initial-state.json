@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.38.0-reader-sized-inline",
+    "appVersion": "0.39.0-reading-priority",
     "createdAt": "2026-05-31",
-    "description": "最新AI本文を読書モード基準の大きさで通常表示する外部運用PWA"
+    "description": "未採用AI本文を本文優先モードで最大表示する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
