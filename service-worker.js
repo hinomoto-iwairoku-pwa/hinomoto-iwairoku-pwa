@@ -1,9 +1,9 @@
-const CACHE_NAME = "hinomoto-pwa-mvp-v030";
+const CACHE_NAME = "hinomoto-pwa-mvp-v031";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style-v030.css?v=030",
-  "./app-v030.js?v=030",
+  "./style-v031.css?v=031",
+  "./app-v031.js?v=031",
   "./manifest.json",
   "./initial-state.json",
   "./icon.svg"

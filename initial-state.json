@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.30.0-reader-mode",
+    "appVersion": "0.31.0-parse-response",
     "createdAt": "2026-05-31",
-    "description": "最新AI本文を大きく読む読書モードを追加した外部運用PWA"
+    "description": "AI返答を本文案・行動候補に分解して採用する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
@@ -121,6 +121,7 @@
     "outbox": null,
     "inbox": null,
     "lastAdoptedRequestId": "",
-    "lastAdoptedTextHash": ""
+    "lastAdoptedTextHash": "",
+    "lastParsedResponse": null
   }
 }
