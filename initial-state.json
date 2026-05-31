@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.33.0-auto-reader",
+    "appVersion": "0.34.0-large-inline-reader",
     "createdAt": "2026-05-31",
-    "description": "AI返答を受信したら自動で大きな読書モードを開く外部運用PWA"
+    "description": "通常画面の最新AI本文を読書モード並みに大きく表示する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
