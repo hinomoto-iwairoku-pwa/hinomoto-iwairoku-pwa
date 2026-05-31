@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.27.0-mobile-ui",
+    "appVersion": "0.28.0-cache-bust-ui",
     "createdAt": "2026-05-31",
-    "description": "スマホUIを見やすく整理した外部運用PWA"
+    "description": "キャッシュ混在対策としてJS/CSSファイル名を変更した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
