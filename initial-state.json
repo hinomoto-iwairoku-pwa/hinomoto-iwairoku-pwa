@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.49.0-candidates-inside-text",
+    "appVersion": "0.50.0-backup-during-review",
     "createdAt": "2026-05-31",
-    "description": "AI本文の最後に行動候補を含めて表示する外部運用PWA"
+    "description": "未採用本文の確認中でもJSON出力と設定確認ができる外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
