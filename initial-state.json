@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.58.0-response-recovery",
+    "appVersion": "0.59.0-scroll-stability",
     "createdAt": "2026-05-31",
-    "description": "AI返答の取り込みを強化し、返答後に本文表示へ戻す外部運用PWA"
+    "description": "返答取り込み後にスクロールが上へ戻される問題を修正した外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
