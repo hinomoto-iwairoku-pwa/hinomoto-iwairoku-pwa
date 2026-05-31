@@ -1,9 +1,9 @@
 {
   "meta": {
     "appName": "日ノ本異聞録 外部運用PWA",
-    "appVersion": "0.54.0-tagged-response-format",
+    "appVersion": "0.55.0-return-to-story",
     "createdAt": "2026-05-31",
-    "description": "ChatGPT返答形式をタグで固定し、bodyだけ本文保存する外部運用PWA"
+    "description": "ChatGPT返答受信後にAIタブではなく本文画面へ自動移動する外部運用PWA"
   },
   "world": {
     "projectName": "日ノ本異聞録：歴史の継承者",
